@@ -1,12 +1,17 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, EyeOff, Plus, Trash2, Search, Edit2, Save, X, ExternalLink } from "lucide-react";
+import { Eye, EyeOff, Plus, Trash2, Search, Edit2, Save, X, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
 const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzsdF9n-jASb3CJ4-pHF3GRo3vb6B8j_g1ttBzQ7oB-FvMn8-_OPkJecgo4QIZ6o5Y/exec";
 
 interface DataRow {
   rowIndex: number;
   [key: string]: any;
+}
+
+interface SortConfig {
+  key: string | null;
+  direction: 'asc' | 'desc';
 }
 
 const Admin = () => {
@@ -16,14 +21,23 @@ const Admin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [password, setPassword] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<"inquiries" | "projects">("inquiries");
   const [searchTerm, setSearchTerm] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingRow, setEditingRow] = useState<DataRow | null>(null);
   const [editForm, setEditForm] = useState<Record<string, string>>({});
   const [newItem, setNewItem] = useState<Record<string, string>>({});
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
 
   const ADMIN_PASSWORD = "zerobytes123";
+
+  const parsePhoneNumber = (phone: string) => {
+    if (!phone) return { countryCode: "", number: "" };
+    const match = phone.match(/^(\+\d{1,3})\s?(.*)$/);
+    if (match) {
+      return { countryCode: match[1], number: match[2] };
+    }
+    return { countryCode: "", number: phone };
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -38,7 +52,7 @@ const Admin = () => {
       const result = await response.json();
       console.log("Fetch result:", result);
       if (result.success) {
-        setData(result.data);
+        setData(result.data.reverse());
         if (result.data.length > 0) {
           setColumns(Object.keys(result.data[0]).filter(k => k !== "rowIndex"));
         }
@@ -62,20 +76,12 @@ const Admin = () => {
     e.preventDefault();
     try {
       const formData = new FormData();
-      if (activeTab === "inquiries") {
-        formData.append("action", "addInquiry");
-        formData.append("name", newItem.Name || "");
-        formData.append("email", newItem.Email || "");
-        formData.append("phone", newItem.Phone || "");
-        formData.append("service", newItem.Service || "");
-        formData.append("message", newItem.Message || "");
-      } else {
-        formData.append("action", "addProject");
-        formData.append("projectName", newItem.Name || "");
-        formData.append("projectDesc", newItem.Description || "");
-        formData.append("projectCategory", newItem.Category || "");
-        formData.append("projectImage", newItem.Image || "");
-      }
+      formData.append("action", "addInquiry");
+      formData.append("name", newItem.Name || "");
+      formData.append("email", newItem.Email || "");
+      formData.append("phone", newItem.Phone || "");
+      formData.append("service", newItem.Service || "");
+      formData.append("message", newItem.Message || "");
 
       await fetch(GOOGLE_SHEET_URL, {
         method: "POST",
@@ -148,17 +154,36 @@ const Admin = () => {
     setEditForm(form);
   };
 
-  const filteredData = data.filter((item) => {
-    const isProject = item.Type === "PROJECT" || item.type === "PROJECT";
-    const itemType = activeTab === "projects" ? isProject : !isProject;
-    if (!itemType) return false;
+  const handleSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const sortedData = [...data].sort((a, b) => {
+    if (!sortConfig.key) return 0;
+    const aVal = a[sortConfig.key] || "";
+    const bVal = b[sortConfig.key] || "";
     
+    if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const filteredData = sortedData.filter((item) => {
     if (!searchTerm) return true;
     const search = searchTerm.toLowerCase();
     return Object.values(item).some(val => 
       String(val).toLowerCase().includes(search)
     );
   });
+
+  const getSortIcon = (key: string) => {
+    if (sortConfig.key !== key) return <ArrowUpDown className="w-4 h-4 ml-1" />;
+    return sortConfig.direction === 'asc' ? <ArrowUp className="w-4 h-4 ml-1" /> : <ArrowDown className="w-4 h-4 ml-1" />;
+  };
 
   if (!isAuthenticated) {
     return (
@@ -203,12 +228,10 @@ const Admin = () => {
           <h1 className="font-display text-2xl md:text-3xl font-bold">Admin Dashboard</h1>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => setActiveTab("inquiries")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === "inquiries" ? "bg-primary text-white" : "bg-surface border border-border"
-              }`}
+              onClick={fetchData}
+              className="px-4 py-2 rounded-lg text-sm font-medium bg-surface border border-border hover:bg-primary/10"
             >
-              All Data ({data.length})
+              Refresh
             </button>
           </div>
         </div>
@@ -218,7 +241,7 @@ const Admin = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             <input
               type="text"
-              placeholder="Search..."
+              placeholder="Search by name, email, phone, service..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
@@ -229,7 +252,7 @@ const Admin = () => {
             className="btn-primary flex items-center gap-2 justify-center"
           >
             <Plus className="w-4 h-4" />
-            Add New
+            Add Inquiry
           </button>
         </div>
 
@@ -246,78 +269,97 @@ const Admin = () => {
                 <tr className="border-b border-border">
                   <th className="text-left p-3 text-sm font-medium text-muted-foreground">#</th>
                   {columns.filter(c => c !== "rowIndex").map(col => (
-                    <th key={col} className="text-left p-3 text-sm font-medium text-muted-foreground">{col}</th>
+                    <th 
+                      key={col} 
+                      className="text-left p-3 text-sm font-medium text-muted-foreground cursor-pointer hover:text-primary"
+                      onClick={() => handleSort(col)}
+                    >
+                      <div className="flex items-center">
+                        {col}
+                        {getSortIcon(col)}
+                      </div>
+                    </th>
                   ))}
                   <th className="text-right p-3 text-sm font-medium text-muted-foreground">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredData.map((item, index) => (
-                  <motion.tr
-                    key={item.rowIndex}
-                    className="border-b border-border/50 hover:bg-surface/50"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.02 }}
-                  >
-                    <td className="p-3 text-sm text-muted-foreground">{index + 1}</td>
-                    {columns.filter(c => c !== "rowIndex").map(col => (
-                      <td key={col} className="p-3 text-sm max-w-[200px] truncate">
-                        {editingRow?.rowIndex === item.rowIndex ? (
-                          <input
-                            type="text"
-                            value={editForm[col] || ""}
-                            onChange={(e) => setEditForm({ ...editForm, [col]: e.target.value })}
-                            className="w-full px-2 py-1 rounded bg-background border border-border text-sm"
-                          />
-                        ) : col.toLowerCase().includes("image") || col.toLowerCase().includes("url") ? (
-                          item[col] ? (
-                            <a href={item[col]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
-                              <ExternalLink className="w-3 h-3" /> Link
-                            </a>
-                          ) : "-"
-                        ) : (
-                          String(item[col] || "-")
-                        )}
+                {filteredData.map((item, index) => {
+                  const phoneData = parsePhoneNumber(item.Phone || "");
+                  return (
+                    <motion.tr
+                      key={item.rowIndex}
+                      className="border-b border-border/50 hover:bg-surface/50"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.02 }}
+                    >
+                      <td className="p-3 text-sm text-muted-foreground">{index + 1}</td>
+                      {columns.filter(c => c !== "rowIndex").map(col => (
+                        <td key={col} className="p-3 text-sm max-w-[200px] truncate">
+                          {editingRow?.rowIndex === item.rowIndex ? (
+                            <input
+                              type="text"
+                              value={editForm[col] || ""}
+                              onChange={(e) => setEditForm({ ...editForm, [col]: e.target.value })}
+                              className="w-full px-2 py-1 rounded bg-background border border-border text-sm"
+                            />
+                          ) : col === "Phone" ? (
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                                {phoneData.countryCode || "N/A"}
+                              </span>
+                              <span>{phoneData.number || "-"}</span>
+                            </div>
+                          ) : col.toLowerCase().includes("image") || col.toLowerCase().includes("url") ? (
+                            item[col] ? (
+                              <a href={item[col]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
+                                <ExternalLink className="w-3 h-3" /> Link
+                              </a>
+                            ) : "-"
+                          ) : (
+                            String(item[col] || "-")
+                          )}
+                        </td>
+                      ))}
+                      <td className="p-3 text-right">
+                        <div className="flex justify-end gap-2">
+                          {editingRow?.rowIndex === item.rowIndex ? (
+                            <>
+                              <button
+                                onClick={handleUpdate}
+                                className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30"
+                              >
+                                <Save className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => { setEditingRow(null); setEditForm({}); }}
+                                className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => startEdit(item)}
+                                className="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(item.rowIndex)}
+                                className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
-                    ))}
-                    <td className="p-3 text-right">
-                      <div className="flex justify-end gap-2">
-                        {editingRow?.rowIndex === item.rowIndex ? (
-                          <>
-                            <button
-                              onClick={handleUpdate}
-                              className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30"
-                            >
-                              <Save className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => { setEditingRow(null); setEditForm({}); }}
-                              className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
-                          </>
-                        ) : (
-                          <>
-                            <button
-                              onClick={() => startEdit(item)}
-                              className="p-2 rounded-lg bg-primary/20 text-primary hover:bg-primary/30"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(item.rowIndex)}
-                              className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </motion.tr>
-                ))}
+                    </motion.tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -340,28 +382,66 @@ const Admin = () => {
               exit={{ scale: 0.9, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <h2 className="font-display text-xl font-bold mb-4">Add New Entry</h2>
+              <h2 className="font-display text-xl font-bold mb-4">Add New Inquiry</h2>
               <form onSubmit={handleAdd} className="space-y-4">
-                {columns.filter(c => c !== "rowIndex" && c !== "Timestamp" && c !== "Type").map(field => (
-                  <div key={field}>
-                    <label className="block text-sm font-medium mb-1">{field}</label>
-                    {field.toLowerCase().includes("message") || field.toLowerCase().includes("description") ? (
-                      <textarea
-                        value={newItem[field] || ""}
-                        onChange={(e) => setNewItem({ ...newItem, [field]: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
-                        rows={3}
-                      />
-                    ) : (
-                      <input
-                        type="text"
-                        value={newItem[field] || ""}
-                        onChange={(e) => setNewItem({ ...newItem, [field]: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
-                      />
-                    )}
-                  </div>
-                ))}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={newItem.Name || ""}
+                    onChange={(e) => setNewItem({ ...newItem, Name: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={newItem.Email || ""}
+                    onChange={(e) => setNewItem({ ...newItem, Email: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Phone (with country code)</label>
+                  <input
+                    type="text"
+                    value={newItem.Phone || ""}
+                    onChange={(e) => setNewItem({ ...newItem, Phone: e.target.value })}
+                    placeholder="+91 98765 43210"
+                    className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Service</label>
+                  <select
+                    value={newItem.Service || ""}
+                    onChange={(e) => setNewItem({ ...newItem, Service: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    required
+                  >
+                    <option value="">Select Service</option>
+                    <option>Web Development</option>
+                    <option>Data Analytics & Science</option>
+                    <option>Branding & Design</option>
+                    <option>AI Automation</option>
+                    <option>Full-Stack Systems</option>
+                    <option>Digital Marketing</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Message</label>
+                  <textarea
+                    value={newItem.Message || ""}
+                    onChange={(e) => setNewItem({ ...newItem, Message: e.target.value })}
+                    className="w-full px-4 py-3 rounded-xl bg-surface border border-border focus:outline-none focus:ring-2 focus:ring-primary/30"
+                    rows={3}
+                  />
+                </div>
                 <div className="flex gap-3 pt-2">
                   <button type="submit" className="btn-primary flex-1">Add</button>
                   <button type="button" onClick={() => setShowAddModal(false)} className="btn-outline flex-1">Cancel</button>
