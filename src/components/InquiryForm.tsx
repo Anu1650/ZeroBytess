@@ -4,8 +4,31 @@ import { Send, CheckCircle, Loader2 } from "lucide-react";
 
 const GOOGLE_FORM_ACTION = "https://script.google.com/macros/s/AKfycbzsdF9n-jASb3CJ4-pHF3GRo3vb6B8j_g1ttBzQ7oB-FvMn8-_OPkJecgo4QIZ6o5Y/exec";
 
+const countryCodes = [
+  { code: "+1", country: "US/CA" },
+  { code: "+44", country: "UK" },
+  { code: "+91", country: "India" },
+  { code: "+86", country: "China" },
+  { code: "+81", country: "Japan" },
+  { code: "+49", country: "Germany" },
+  { code: "+33", country: "France" },
+  { code: "+61", country: "Australia" },
+  { code: "+971", country: "UAE" },
+  { code: "+20", country: "Egypt" },
+  { code: "+234", country: "Nigeria" },
+  { code: "+27", country: "South Africa" },
+  { code: "+55", country: "Brazil" },
+  { code: "+52", country: "Mexico" },
+  { code: "+82", country: "South Korea" },
+  { code: "+39", country: "Italy" },
+  { code: "+34", country: "Spain" },
+  { code: "+31", country: "Netherlands" },
+  { code: "+46", country: "Sweden" },
+  { code: "+47", country: "Norway" },
+];
+
 const InquiryForm = () => {
-  const [form, setForm] = useState({ name: "", email: "", phone: "", service: "", message: "" });
+  const [form, setForm] = useState({ name: "", email: "", phone: "", countryCode: "+91", service: "", message: "" });
   const [status, setStatus] = useState<"idle" | "sending" | "sent">("idle");
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -23,7 +46,7 @@ const InquiryForm = () => {
       formData.append("action", "addInquiry");
       formData.append("name", form.name);
       formData.append("email", form.email);
-      formData.append("phone", form.phone);
+      formData.append("phone", form.countryCode + " " + form.phone);
       formData.append("service", form.service);
       formData.append("message", form.message);
 
@@ -46,7 +69,7 @@ const InquiryForm = () => {
     setStatus("sent");
     setTimeout(() => {
       setStatus("idle");
-      setForm({ name: "", email: "", phone: "", service: "", message: "" });
+      setForm({ name: "", email: "", phone: "", countryCode: "+91", service: "", message: "" });
     }, 3000);
   };
 
@@ -115,14 +138,26 @@ const InquiryForm = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Phone Number</label>
-              <input
-                type="tel"
-                name="phone"
-                value={form.phone}
-                onChange={handleChange}
-                placeholder="+91 XXXXX XXXXX"
-                className="w-full px-4 py-3 rounded-xl bg-surface border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
-              />
+              <div className="flex gap-2">
+                <select
+                  name="countryCode"
+                  value={form.countryCode}
+                  onChange={handleChange}
+                  className="w-28 px-3 py-3 rounded-xl bg-surface border border-border text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all appearance-none"
+                >
+                  {countryCodes.map((cc) => (
+                    <option key={cc.code} value={cc.code}>{cc.code} ({cc.country})</option>
+                  ))}
+                </select>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  placeholder="XXXXX XXXXX"
+                  className="flex-1 px-4 py-3 rounded-xl bg-surface border border-border text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-all"
+                />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">Service Needed</label>
