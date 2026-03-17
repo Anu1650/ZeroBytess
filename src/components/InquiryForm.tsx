@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Send, CheckCircle, Loader2 } from "lucide-react";
 
-const GOOGLE_FORM_ACTION = "https://script.google.com/macros/s/AKfycbzsdF9n-jASb3CJ4-pHF3GRo3vb6B8j_g1ttBzQ7oB-FvMn8-_OPkJecgo4QIZ6o5Y/exec";
+const GOOGLE_FORM_ACTION = "https://script.google.com/macros/s/AKfycbz83HRSdtTMrOzvwb5zvO_JjR69WdJ4wwBPFtDds78hCTPcKTWiR5N2WO4jVnHfkKE-/exec";
 
 const countryCodes = [
   { code: "+1", country: "US/CA" },
@@ -46,7 +46,8 @@ const InquiryForm = () => {
       formData.append("action", "addInquiry");
       formData.append("name", form.name);
       formData.append("email", form.email);
-      formData.append("phone", form.countryCode + " " + form.phone);
+      formData.append("countryCode", form.countryCode);
+      formData.append("phone", form.phone);
       formData.append("service", form.service);
       formData.append("message", form.message);
 

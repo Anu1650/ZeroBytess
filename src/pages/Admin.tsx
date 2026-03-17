@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, EyeOff, Plus, Trash2, Search, Edit2, Save, X, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 
-const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbzsdF9n-jASb3CJ4-pHF3GRo3vb6B8j_g1ttBzQ7oB-FvMn8-_OPkJecgo4QIZ6o5Y/exec";
+const GOOGLE_SHEET_URL = "https://script.google.com/macros/s/AKfycbz83HRSdtTMrOzvwb5zvO_JjR69WdJ4wwBPFtDds78hCTPcKTWiR5N2WO4jVnHfkKE-/exec";
 
 interface DataRow {
   rowIndex: number;
@@ -304,13 +304,12 @@ const Admin = () => {
                               onChange={(e) => setEditForm({ ...editForm, [col]: e.target.value })}
                               className="w-full px-2 py-1 rounded bg-background border border-border text-sm"
                             />
+                          ) : col === "CountryCode" ? (
+                            <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
+                              {item[col] || "-"}
+                            </span>
                           ) : col === "Phone" ? (
-                            <div className="flex items-center gap-2">
-                              <span className="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-medium">
-                                {phoneData.countryCode || "N/A"}
-                              </span>
-                              <span>{phoneData.number || "-"}</span>
-                            </div>
+                            <span>{item[col] || "-"}</span>
                           ) : col.toLowerCase().includes("image") || col.toLowerCase().includes("url") ? (
                             item[col] ? (
                               <a href={item[col]} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline flex items-center gap-1">
