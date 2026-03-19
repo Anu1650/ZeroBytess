@@ -8,7 +8,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    allowedHosts: ["all", "zerobytes-studio.loca.lt", "zerobytes-pro.loca.lt"],
+    allowedHosts: ["all"],
     hmr: {
       overlay: false,
     },

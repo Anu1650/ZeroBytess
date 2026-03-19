@@ -5,10 +5,7 @@ import { ParallaxOrb } from "./ParallaxOrb";
 const services = [
   { icon: Globe, title: "Web Development", desc: "Modern scalable websites and web applications with responsive design, blazing performance, and SEO-friendly architecture.", tags: ["Responsive Sites", "Web Apps", "Dashboards", "Landing Pages"] },
   { icon: BarChart3, title: "Data Analytics & Science", desc: "Data-driven insights for smarter decisions. Visualization dashboards, reporting systems, and trend analysis.", tags: ["Data Analysis", "Visualization", "Reporting", "Insights"] },
-  { icon: Palette, title: "Branding & Design", desc: "Strong visual identity and creative branding. Logos, social media creatives, and complete brand strategy.", tags: ["Brand Identity", "Logo Design", "Social Media", "Marketing Assets"] },
-  { icon: Bot, title: "AI Automation", desc: "Smart automation solutions with AI workflows, intelligent assistants, and automation pipelines.", tags: ["AI Workflows", "Automation", "Integrations", "Smart Systems"] },
   { icon: Layers, title: "Full-Stack Systems", desc: "Complete end-to-end system engineering. Backend architecture, API integration, and scalable infrastructure.", tags: ["Full-Stack Apps", "APIs", "Databases", "Auth Systems"] },
-  { icon: TrendingUp, title: "Digital Marketing", desc: "Growth-focused digital strategies. Performance marketing, audience targeting, and analytics-based optimization.", tags: ["Performance Marketing", "SEO", "Social Media", "Growth Strategy"] },
 ];
 
 const ServicesSection = () => {

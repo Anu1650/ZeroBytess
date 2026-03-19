@@ -5,11 +5,10 @@ function doGet(e) {
   var rows = [];
   
   for (var i = 1; i < data.length; i++) {
-    var row = {};
+    var row = { "rowIndex": i + 1 };
     for (var j = 0; j < headers.length; j++) {
       row[headers[j]] = data[i][j];
     }
-    row["rowIndex"] = i + 1;
     rows.push(row);
   }
   
@@ -23,15 +22,14 @@ function doPost(e) {
   
   if (action === "addInquiry") {
     var timestamp = new Date();
-    var name = e.parameter.name;
-    var email = e.parameter.email;
-    var countryCode = e.parameter.countryCode;
-    var phone = e.parameter.phone;
-    var service = e.parameter.service;
-    var message = e.parameter.message;
+    var name = e.parameter.name || "";
+    var email = e.parameter.email || "";
+    var countryCode = e.parameter.countryCode || "";
+    var phone = e.parameter.phone || "";
+    var service = e.parameter.service || "";
+    var message = e.parameter.message || "";
     
     sheet.appendRow([timestamp, name, email, countryCode, phone, service, message]);
-    
     return ContentService.createTextOutput("OK");
   }
   
@@ -41,7 +39,6 @@ function doPost(e) {
     var value = e.parameter.value;
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var colIndex = headers.indexOf(field) + 1;
-    
     if (colIndex > 0 && rowIndex > 1) {
       sheet.getRange(rowIndex, colIndex).setValue(value);
       return ContentService.createTextOutput("OK");
